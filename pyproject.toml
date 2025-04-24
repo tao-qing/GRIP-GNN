@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "grip-gnn"
+version = "0.1.0"
+description = ""
+authors = ["Tao Qing <qingtao.pharm@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+torch = "^2.6.0"
+torch-geometric = "^2.6.1"
+ipykernel = "^6.29.5"
+torchvision = "^0.21.0"
+scikit-learn = "^1.6.1"
+tensorboardx = "^2.6.2.2"
+matplotlib = "^3.10.0"
+tensorboard = "^2.19.0"
+tensorflow = "^2.18.0"
+gseapy = "^1.1.5"
+bio = "^1.7.1"
+seaborn = "^0.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

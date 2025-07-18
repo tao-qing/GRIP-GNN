@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import pickle
 from sklearn.metrics import roc_curve, auc
+from tqdm import tqdm
+
 
 import os
 os.makedirs('out', exist_ok=True)
@@ -24,7 +26,7 @@ import itertools
 cancers = pd.Series(germline_input['cancer']).value_counts().index
 combinations = list(itertools.combinations(cancers[:10], 2))
 
-for g,s in combinations:
+for g,s in tqdm(combs, desc="cancers"):
     cancer_index = np.where(pd.Series(germline_input['cancer']) == g)
     control_index = np.where(pd.Series(germline_input['cancer']) == s)
     all_index = np.concatenate((cancer_index[0], control_index[0]))
@@ -33,7 +35,7 @@ for g,s in combinations:
     edge_input = germline_input['edge']
     label = [1] * len(cancer_index[0]) + [0] * len(control_index[0]) 
     
-    for weight_score in [None, 'dependency_score', 'pli','sh']:
+    for weight_score in tqdm([None, 'dependency_score', 'pli','sh'],desc='weights'):
         if weight_score is None:
             input_object = build_samples(g_input, 
                             edge_input, 

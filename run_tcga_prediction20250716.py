@@ -13,20 +13,41 @@ import pickle
 from sklearn.metrics import roc_curve, auc
 from tqdm import tqdm
 
+import argparse
+
+parser = argparse.ArgumentParser(description="Process cancer types.")
+parser.add_argument('--main', type=str, required=True, help="Main cancer type (e.g. BRCA)")
+parser.add_argument('--subtypes', type=lambda s: s.split(','), required=True, help="Comma-separated list of subtypes (e.g. HSCH,OV,SKCM)")
+
+args = parser.parse_args()
+
+print(f"Main cancer type: {args.main}")
+print(f"Subtypes: {args.subtypes}")
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
 import os
 os.makedirs('out', exist_ok=True)
+
 
 from old_gat_withweight import build_samples,GATWeightedClassifier,train,evaluate,run_cross_validation
 
 germline_input = np.load('./data/tcga_germlinevariants_7861patients.npy', allow_pickle= True).item()
 germline_input.keys()
 
-import itertools
-cancers = pd.Series(germline_input['cancer']).value_counts().index
-combinations = list(itertools.combinations(cancers[:10], 2))
+#import itertools
+#cancers = pd.Series(germline_input['cancer']).value_counts().index
+#combinations = list(itertools.combinations(cancers[:10], 2))
 
-for g,s in tqdm(combs, desc="cancers"):
+import itertools
+cancers = pd.Series(germline_input['cancer']).value_counts().index[:10]
+g = args.main
+combs = args.subtypes
+
+
+for s in tqdm(combs, desc="cancers"):
     cancer_index = np.where(pd.Series(germline_input['cancer']) == g)
     control_index = np.where(pd.Series(germline_input['cancer']) == s)
     all_index = np.concatenate((cancer_index[0], control_index[0]))
@@ -49,7 +70,7 @@ for g,s in tqdm(combs, desc="cancers"):
                             germline_input[weight_score].fillna(0.0).to_numpy(dtype=float)
                             )
         #pos_weight_tensor = torch.tensor([186 / 784], device='cpu')
-        output = run_cross_validation(input_object, in_channels=1, pos_weight = None, epochs=30, folds = 4, task = f'{g}_vs_{s}')
+        output = run_cross_validation(input_object, in_channels=1, pos_weight = None, epochs=30, folds = 4, task = f'{g}_vs_{s}', device=device)
         np.save(f'./out/{g}_vs_{s}_weight_{str(weight_score)}_prediction_results.npy', output, allow_pickle=True)
 
         true_label = []

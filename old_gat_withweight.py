@@ -9,6 +9,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 
+
+
 # ===================================================================
 # 1. DATA PREPARATION (Modified to include node_weights)
 # ===================================================================
@@ -98,10 +100,13 @@ class GATWeightedClassifier(torch.nn.Module):
 # ===================================================================
 # 3. TRAIN/EVALUATE FUNCTIONS (Modified to pass node_weights)
 # ===================================================================
-def train(model, loader, optimizer, criterion):
+def train(model, loader, optimizer, criterion,device):
     model.train()
     total_loss = 0
     for batch in loader:
+        
+        batch = batch.to(device)
+        
         optimizer.zero_grad()
 
         if hasattr(batch, 'node_weights'):
@@ -118,12 +123,14 @@ def train(model, loader, optimizer, criterion):
         total_loss += loss.item()
     return total_loss / len(loader)
 
-def evaluate(model, loader):
+def evaluate(model, loader, device):
     model.eval()
     y_true, y_pred, y_prob = [], [], []
     with torch.no_grad():
         for batch in loader:
-
+            
+            batch = batch.to(device)
+            
             if hasattr(batch, 'node_weights'):
                 out = model(batch.x, batch.edge_index, batch.batch, node_weights=batch.node_weights).squeeze()
             else:
@@ -155,7 +162,7 @@ def evaluate(model, loader):
 # ===================================================================
 # 4. CROSS-VALIDATION RUNNER (Main logic remains the same)
 # ===================================================================
-def run_cross_validation(samples, in_channels, hidden_channels=32, pos_weight = None, epochs=100, folds=5, task=None):
+def run_cross_validation(samples, in_channels,device, hidden_channels=32, pos_weight = None, epochs=100, folds=5, task=None):
     labels = [data.y.item() for data in samples]
     kfold = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
 
@@ -167,18 +174,18 @@ def run_cross_validation(samples, in_channels, hidden_channels=32, pos_weight = 
         train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=32)
 
-        model = GATWeightedClassifier(in_channels=in_channels, hidden_channels=hidden_channels, out_channels=1)
+        model = GATWeightedClassifier(in_channels=in_channels, hidden_channels=hidden_channels, out_channels=1).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=0.005, weight_decay=5e-4)
         criterion = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight) # Consider adding pos_weight here if needed
 
         losses = []
         for epoch in range(1, epochs + 1):
-            loss = train(model, train_loader, optimizer, criterion)
+            loss = train(model, train_loader, optimizer, criterion,device)
             losses.append(loss)
             if epoch % 10 == 0:
                 print(f"Epoch {epoch}: Loss = {loss:.4f}")
 
-        acc, auc, precision, recall, f1, fpr, tpr, y_true, y_pred, y_prob = evaluate(model, test_loader)
+        acc, auc, precision, recall, f1, fpr, tpr, y_true, y_pred, y_prob = evaluate(model, test_loader,device)
         
         print(f"Fold {fold+1} - Accuracy: {acc:.4f}, AUC: {auc:.4f}, F1: {f1:.4f}")
         fold_results.append({

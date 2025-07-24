@@ -110,10 +110,10 @@ def train(model, loader, optimizer, criterion,device):
         optimizer.zero_grad()
 
         if hasattr(batch, 'node_weights'):
-            out = model(batch.x, batch.edge_index, batch.batch, node_weights=batch.node_weights).squeeze()
+            out = model(batch.x, batch.edge_index, batch.batch, node_weights=batch.node_weights).squeeze(-1)
         else:
             # If not, call the model without the node_weights argument
-            out = model(batch.x, batch.edge_index, batch.batch).squeeze()
+            out = model(batch.x, batch.edge_index, batch.batch).squeeze(-1)
             
         # Pass node_weights from the batch to the model
         #out = model(batch.x, batch.edge_index, batch.batch, batch.node_weights).squeeze()
@@ -132,9 +132,9 @@ def evaluate(model, loader, device):
             batch = batch.to(device)
             
             if hasattr(batch, 'node_weights'):
-                out = model(batch.x, batch.edge_index, batch.batch, node_weights=batch.node_weights).squeeze()
+                out = model(batch.x, batch.edge_index, batch.batch, node_weights=batch.node_weights).squeeze(-1)
             else:
-                out = model(batch.x, batch.edge_index, batch.batch).squeeze()
+                out = model(batch.x, batch.edge_index, batch.batch).squeeze(-1)
             # Pass node_weights from the batch to the model
             #out = model(batch.x, batch.edge_index, batch.batch, batch.node_weights).squeeze()
             prob = torch.sigmoid(out)
